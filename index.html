@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gustavo Games</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #0a0a0f;
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: #111;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px #2e2e3a;
+    }
+
+    header h1 {
+      color: #7b5fff;
+      text-shadow: 0 0 10px #7b5fff;
+      font-size: 1.8rem;
+      margin: 0;
+    }
+
+    nav {
+      background: #1b1b25;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px 0;
+    }
+
+    nav a {
+      color: #ccc;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #7b5fff;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #14141d;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(123, 95, 255, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 15px rgba(123, 95, 255, 0.5);
+    }
+
+    .card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 10px;
+      text-align: center;
+    }
+
+    .card-content h3 {
+      margin: 10px 0 5px;
+      color: #7b5fff;
+    }
+
+    .card-content a {
+      display: inline-block;
+      margin-top: 5px;
+      background: #7b5fff;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+
+    .card-content a:hover {
+      background: #9a7bff;
+    }
+
+    footer {
+      background: #111;
+      text-align: center;
+      padding: 15px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎮 Gustavo Games</h1>
+  </header>
+
+  <nav>
+    <a href="#">Início</a>
+    <a href="#jogos">Jogos</a>
+    <a href="#sobre">Sobre</a>
+    <a href="#contato">Contato</a>
+  </nav>
+
+  <main>
+    <section id="jogos">
+      <h2>Meus Jogos</h2>
+      <div class="grid">
+        <!-- Exemplo de jogo 1 -->
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/32/Space-invaders.png" alt="Jogo 1">
+          <div class="card-content">
+            <h3>Space Invaders Clone</h3>
+            <a href="https://itch.io/" target="_blank">Jogar</a>
+          </div>
+        </div>
+
+        <!-- Exemplo de jogo 2 -->
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/59/Pacman.png" alt="Jogo 2">
+          <div class="card-content">
+            <h3>Pac-Man Retro</h3>
+            <a href="https://itch.io/" target="_blank">Jogar</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sobre" style="margin-top:40px;">
+      <h2>Sobre</h2>
+      <p>Este site foi criado por Gustavo para reunir e divulgar seus próprios jogos e projetos interativos. Todos os jogos listados aqui são obras independentes, experimentais e feitos com paixão pelo universo gamer.</p>
+    </section>
+
+    <section id="contato" style="margin-top:40px;">
+      <h2>Contato</h2>
+      <p>Quer entrar em contato? Envie uma mensagem para: <strong>gustavogames@email.com</strong></p>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 Gustavo Games — Todos os direitos reservados.
+  </footer>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAwaJz5K1JX41OHvMkBiZTAI03F6VtQ82E",
+    authDomain: "flutter-ai-playground-2577d.firebaseapp.com",
+    databaseURL: "https://flutter-ai-playground-2577d-default-rtdb.firebaseio.com",
+    projectId: "flutter-ai-playground-2577d",
+    storageBucket: "flutter-ai-playground-2577d.appspot.com",
+    messagingSenderId: "1024549660421",
+    appId: "1:1024549660421:web:5c886849a42842aa30b96c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const gamesRef = ref(db, 'jogos');
+
+  const form = document.getElementById('addGameForm');
+  const grid = document.getElementById('gamesGrid');
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value;
+      const link = document.getElementById('link').value;
+      const imagem = document.getElementById('imagem').value;
+
+      push(gamesRef, { nome, link, imagem });
+      form.reset();
+    });
+  }
+
+  onValue(gamesRef, (snapshot) => {
+    if (!grid) return;
+    grid.innerHTML = '';
+    snapshot.forEach((child) => {
+      const jogo = child.val();
+      const card = `
+        <div class="card">
+          <img src="${jogo.imagem}" alt="${jogo.nome}">
+          <div class="card-content">
+            <h3>${jogo.nome}</h3>
+            <a href="${jogo.link}" target="_blank">Jogar</a>
+          </div>
+        </div>
+      `;
+      grid.innerHTML += card;
+    });
+  });
+</script>
+</body>
+</html>
