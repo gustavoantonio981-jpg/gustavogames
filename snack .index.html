@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Snake — Gustavo Games</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#10151d; --grid:#0f2030;
+    --snake:#7b5fff; --head:#b9a6ff; --food:#2ee07a; --text:#e6eef8;
+    --btn:#222b38; --btnActive:#33455e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    display:flex; flex-direction:column; align-items:center;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  }
+  header{padding:14px 12px; text-align:center; width:100%; background:linear-gradient(180deg,#0d1320,transparent);}
+  h1{margin:0; font-size:1.3rem; letter-spacing:.5px}
+  #hud{
+    display:flex; gap:12px; align-items:center; justify-content:center;
+    margin:6px 0 10px 0; font-size:.95rem; flex-wrap:wrap;
+  }
+  #gameWrap{
+    width:100%; max-width:520px; aspect-ratio:1/1; /* quadrado */
+    background:var(--panel); border-radius:14px; padding:10px; box-shadow:0 12px 40px rgba(0,0,0,.35);
+  }
+  canvas{
+    width:100%; height:100%; display:block; background:
+      linear-gradient(90deg, transparent 49%, rgba(255,255,255,.05) 50%, transparent 51%) 0 0/5% 100%,
+      linear-gradient(0deg, transparent 49%, rgba(255,255,255,.05) 50%, transparent 51%) 0 0/100% 5%,
+      var(--grid);
+    border-radius:10px;
+  }
+  #controls{
+    width:100%; max-width:520px; margin:10px auto 18px; display:grid;
+    grid-template-columns:repeat(3,1fr); gap:10px; user-select:none;
+  }
+  .btn{
+    background:var(--btn); border:none; color:var(--text); padding:14px 10px;
+    border-radius:12px; font-size:1.05rem; box-shadow:0 6px 16px rgba(0,0,0,.25); touch-action:manipulation;
+  }
+  .btn:active{background:var(--btnActive)}
+  .spacer{visibility:hidden}
+  footer{opacity:.7; font-size:.8rem; padding:12px 0 18px}
+  .tag{padding:4px 8px; background:#0f172a; border-radius:999px; font-size:.8rem}
+</style>
+</head>
+<body>
+  <header>
+    <h1>🐍 Snake — <span class="tag">Gustavo Games</span></h1>
+  </header>
+
+  <div id="hud">
+    <div>🍎 Pontos: <strong id="score">0</strong></div>
+    <div>🚀 Velocidade: <strong id="speed">1</strong>x</div>
+    <button class="btn" id="restart">Reiniciar</button>
+  </div>
+
+  <div id="gameWrap">
+    <canvas id="game" width="400" height="400" aria-label="Tabuleiro do jogo Snake"></canvas>
+  </div>
+
+  <!-- Controles touch -->
+  <div id="controls">
+    <button class="btn spacer" disabled>•</button>
+    <button class="btn" id="up">▲</button>
+    <button class="btn spacer" disabled>•</button>
+    <button class="btn" id="left">◀</button>
+    <button class="btn" id="down">▼</button>
+    <button class="btn" id="right">▶</button>
+  </div>
+
+  <footer>© 2025 Gustavo Games</footer>
+
+<script>
+(() => {
+  // ======= Configuração =======
+  const cvs = document.getElementById('game');
+  const ctx = cvs.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const speedEl = document.getElementById('speed');
+  const size = 20;             // grid: 20x20
+  const cell = cvs.width / size;
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+  const colorSnake = getComputedStyle(document.documentElement).getPropertyValue('--snake').trim();
+  const colorHead  = getComputedStyle(document.documentElement).getPropertyValue('--head').trim();
+  const colorFood  = getComputedStyle(document.documentElement).getPropertyValue('--food').trim();
+
+  let snake, dir, nextDir, food, score, speed, stepTime, lastStep, alive;
+
+  function reset() {
+    snake = [{x:10, y:10},{x:9,y:10},{x:8,y:10}];
+    dir = {x:1, y:0}; nextDir = {x:1, y:0};
+    food = randFood();
+    score = 0; speed = 1; stepTime = 140; lastStep = 0; alive = true;
+    scoreEl.textContent = score;
+    speedEl.textContent = speed.toFixed(0);
+    draw();
+  }
+
+  function randFood(){
+    while(true){
+      const f = { x: (Math.random()*size|0), y:(Math.random()*size|0) };
+      if (!snake.some(s=>s.x===f.x && s.y===f.y)) return f;
+    }
+  }
+
+  function gameStep(ts){
+    if(!alive) return;
+    if (ts - lastStep > stepTime) {
+      lastStep = ts;
+      // aplica direção escolhida
+      if ((nextDir.x !== -dir.x) || (nextDir.y !== -dir.y)) dir = nextDir;
+
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      // colisões com parede
+      if (head.x<0 || head.y<0 || head.x>=size || head.y>=size) return gameOver();
+
+      // colisão com o corpo
+      if (snake.some((s,i)=> i>0 && s.x===head.x && s.y===head.y)) return gameOver();
+
+      snake.unshift(head);
+
+      // comeu?
+      if (head.x===food.x && head.y===food.y) {
+        score++; scoreEl.textContent = score;
+        // acelera um pouco a cada 5 pontos
+        if (score % 5 === 0 && stepTime > 70) {
+          stepTime -= 10; speed++; speedEl.textContent = speed.toFixed(0);
+        }
+        food = randFood();
+      } else {
+        snake.pop();
+      }
+      draw();
+    }
+    requestAnimationFrame(gameStep);
+  }
+
+  function gameOver(){
+    alive = false;
+    draw(true);
+    setTimeout(()=>alert(`Fim de jogo!\nPontos: ${score}`), 50);
+  }
+
+  // ======= Desenho =======
+  function draw(over=false){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+
+    // comida
+    ctx.fillStyle = colorFood;
+    roundedRect(food.x*cell+2, food.y*cell+2, cell-4, cell-4, 6);
+
+    // cobra
+    for (let i=snake.length-1; i>=0; i--){
+      const s = snake[i];
+      ctx.fillStyle = (i===0) ? colorHead : colorSnake;
+      roundedRect(s.x*cell+1, s.y*cell+1, cell-2, cell-2, 8);
+    }
+
+    if (over){
+      ctx.fillStyle = 'rgba(0,0,0,.45)';
+      ctx.fillRect(0,0,cvs.width,cvs.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 26px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over', cvs.width/2, cvs.height/2);
+      ctx.font = '14px system-ui, sans-serif';
+      ctx.fillText('Toque em Reiniciar', cvs.width/2, cvs.height/2+24);
+    }
+  }
+
+  function roundedRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ======= Controles =======
+  function setDir(nx,ny){ nextDir = {x:nx, y:ny}; }
+  document.addEventListener('keydown', e=>{
+    const k = e.key;
+    if (k==='ArrowUp') setDir(0,-1);
+    else if (k==='ArrowDown') setDir(0,1);
+    else if (k==='ArrowLeft') setDir(-1,0);
+    else if (k==='ArrowRight') setDir(1,0);
+  });
+
+  // botões touch
+  document.getElementById('up').onclick    = ()=>setDir(0,-1);
+  document.getElementById('down').onclick  = ()=>setDir(0,1);
+  document.getElementById('left').onclick  = ()=>setDir(-1,0);
+  document.getElementById('right').onclick = ()=>setDir(1,0);
+
+  // swipe (arrastar)
+  let sx=0, sy=0;
+  cvs.addEventListener('touchstart', e=>{
+    const t = e.touches[0]; sx=t.clientX; sy=t.clientY;
+  }, {passive:true});
+  cvs.addEventListener('touchmove', e=>{
+    if (!sx && !sy) return;
+    const t = e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if (Math.abs(dx)+Math.abs(dy) > 18){ // limiar
+      if (Math.abs(dx) > Math.abs(dy)) setDir(Math.sign(dx),0);
+      else setDir(0,Math.sign(dy));
+      sx=sy=0;
+    }
+  }, {passive:true});
+
+  // reiniciar
+  document.getElementById('restart').onclick = ()=>{ reset(); requestAnimationFrame(gameStep); };
+
+  // Ajuste de resolução para telas retina / J7
+  function fitCanvas(){
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = cvs.clientWidth, h = cvs.clientHeight;
+    cvs.width = Math.round(w * dpr);
+    cvs.height = Math.round(h * dpr);
+    // manter grid quadrada: recalcula cell relativo ao novo width
+  }
+  window.addEventListener('resize', ()=>{ fitCanvas(); draw(); });
+  fitCanvas();
+  reset();
+  requestAnimationFrame(gameStep);
+})();
+</script>
+</body>
+</html>
